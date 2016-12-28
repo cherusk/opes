@@ -31,8 +31,8 @@ class Irq:
 
 def procfs_read_raw(_file):
     raw = ""
-    with open(_file, "r") as softirqs_f:
-        raw = softirqs_f.read()
+    with open(_file, "r") as irqs_f:
+        raw = irqs_f.read()
 
     return raw
 
@@ -61,9 +61,9 @@ def merge_rate_meas(abstr_l, delta):
 
 if __name__ == "__main__":
     
-    parser = argparse.ArgumentParser(description='Frontend to irqs (soft/hard) proc fs')
-    parser.add_argument("-p", '--perc', default=False, help='show CPU taken by softIRQ in percentage', action='store_true')
-    parser.add_argument("-t", dest="total", default=False, help='total up softirqs per channel', action='store_true')
+    parser = argparse.ArgumentParser(description='Frontend to irqs (soft | hard) proc fs')
+    parser.add_argument("-p", '--perc', default=False, help='show CPU taken by IRQ in percentage', action='store_true')
+    parser.add_argument("-t", dest="total", default=False, help='total up irqs per channel', action='store_true')
     parser.add_argument("-s", dest="sort", help='CPU num to sort by') 
     parser.add_argument("-r", "--rate", dest="rate", help='determine rate per sec for interval', nargs=2)
     parser.add_argument("--hard", dest="hard", help='showing hardirqs', default=False, action='store_true')
