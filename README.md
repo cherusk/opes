@@ -4,6 +4,8 @@ Place for tools/utilities
 
 # irq_reeler.py
 
+A tool meant to make linux interrupts userland analysis more convenient.
+
 ```
 usage: irq_reeler.py [-h] [-p] [-t] [-s SORT] [-r RATE RATE] [--hard]
 
