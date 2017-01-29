@@ -42,7 +42,7 @@ Gives you the rate per sec softirqs are processed at certain CPUS.
 # xps_reshare_cpus.py
 
 Utils for sharing TX queues among effective CPUs on system to be applied. It does apply a sane default with a no knobs approach.
-
+```
 usage: xps_reshare_cpus.py [-h] [-c CPU_NUM] [-i IFACE]
 
 cpu to tx driver queues distribution mechanism
@@ -53,3 +53,4 @@ optional arguments:
                         effective cpu number of node
   -i IFACE, --iface IFACE
                         interface which holds the tx queues
+```
