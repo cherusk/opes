@@ -16,13 +16,17 @@
 #You should have received a copy of the GNU General Public License
 #along with this program. If not, see <http://www.gnu.org/licenses/>.
 
+ANSIBLE_METADATA = {'metadata_version': '1.0',
+                    'status': ['preview'],
+                    'supported_by': 'community'}
+
 DOCUMENTATION = '''
 ---
 module: pkt_steering
 short_description: Control active and configured kernel packet steering settings
 description:
-     - This module controls active and configured kernel packet steering settings in a convenient way. (ref.: https://www.kernel.org/doc/Documentation/networking/scaling.txt)
-version_added: "2.1.1.0"
+     - This module controls active and configured kernel packet steering settings in a convenient way. (ref.: U(https://www.kernel.org/doc/Documentation/networking/scaling.txt))
+version_added: "2.3.0"
 options:
     tech:
         description:
@@ -33,21 +37,23 @@ options:
         description:
             State of the specific packet steering technology. The state also
             decides about the steering resources distribution. For xps/rps
-            'absent', 'balanced', 'specific' are allowed. balanced purposes to
-            bring about a benevolent distribution with respecting also numa
-            arches intrinsics.  Rfs only discerns 'present' and 'absent'.
+            C(absent), C(balanced), C(specific) are allowed. C(balanced)
+            purposes to bring about a benevolent distribution with respecting
+            also numa arches intrinsics like a split node cache hierarchy.  Rfs
+            only discerns C(present) and C(absent).
         required: true
         choices : ['present', 'absent', 'balanced', 'specific']),
     iface:
         description:
             Kernel net interface steering to configure on. E.g. eth0, or enp2s0.
         required : true
+        type: str
     distribution:
         description:
             Path to json file holding the individually thought up packet
-            steering queues to cpu association. Available for xps|rps - it's
-            juseful when something else than balanced steering is required. You
-            would use it with the 'specific' state.
+            steering queues to cpu association. Available for C(tech=xps) or
+            C(tech=rps) - it's useful when something else than balanced
+            steering is required.
 
             Basic example:
             {
@@ -57,26 +63,28 @@ options:
                   [...]
                 ]
             }
-            Would spread queue 0 to cpus 1,4-5 and so on.
+            Would spread queue 0 to cpus 1,4-5 and so on. Required when
+            C(state=specific).
         required : false
         default: None
     tab_size:
         description:
             Kernel RFS flow dissection table size for rfs.
+            Optional when C(tech=rfs).
         required : false
+        type: int
         default: 32768
 
 author:
     - Matthias Tafelmeier (@cherusk)
 '''
 
-# todo
 EXAMPLES = '''
 
 # balance out tx queues of a potentially numa based arch via XPS
 - pkt_steering: tech=xps state=balanced iface=enp2s0
 
-# balance rps based on on distribution spec 
+# balance rps based on on distribution spec
 - pkt_steering: tech=rps state=balanced iface=enp2s0 distribution=./my_distr.json
 '''
 
