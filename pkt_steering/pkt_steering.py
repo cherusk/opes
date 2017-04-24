@@ -1,20 +1,20 @@
-    #!/usr/bin/python
+#!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-#Copyright (C) 2017  Matthias Tafelmeier
+# Copyright (C) 2017  Matthias Tafelmeier
 
-#pkt_steering is free software: you can redistribute it and/or modify
-#it under the terms of the GNU General Public License as published by
-#the Free Software Foundation, either version 3 of the License, or
-#(at your option) any later version.
+# pkt_steering is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
 
-#pkt_steering is distributed in the hope that it will be useful,
-#but WITHOUT ANY WARRANTY; without even the implied warranty of
-#MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#GNU General Public License for more details.
+# pkt_steering is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
 
-#You should have received a copy of the GNU General Public License
-#along with this program. If not, see <http://www.gnu.org/licenses/>.
+# You should have received a copy of the GNU General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 ANSIBLE_METADATA = {'metadata_version': '1.0',
                     'status': ['preview'],
@@ -25,58 +25,63 @@ DOCUMENTATION = '''
 module: pkt_steering
 short_description: Control active and configured kernel packet steering settings
 description:
-     - This module controls active and configured kernel packet steering settings in a convenient way. (ref.: U(https://www.kernel.org/doc/Documentation/networking/scaling.txt))
-version_added: "2.3.0"
+     - This module controls active and configured kernel packet steering
+       settings in a convenient way. (ref.
+       U(https://www.kernel.org/doc/Documentation/networking/scaling.txt))
+version_added: "2.4"
 options:
     tech:
         description:
-            Packet Steering technology to configure.
+         - Packet Steering technology to configure.
         required: true
         choices: ['rfs', 'rps', 'xps']
     state:
         description:
-            State of the specific packet steering technology. The state also
-            decides about the steering resources distribution. For xps/rps
-            C(absent), C(balanced), C(specific) are allowed. C(balanced)
-            purposes to bring about a benevolent distribution with respecting
-            also numa arches intrinsics like a split node cache hierarchy.  Rfs
-            only discerns C(present) and C(absent).
+         - State of the specific packet steering technology. The state also
+           decides about the steering resources distribution. For xps/rps
+           C(absent), C(balanced), C(specific) are allowed. C(balanced)
+           purposes to bring about a benevolent distribution with respecting
+           also numa arches intrinsics like a split node cache hierarchy.  Rfs
+           only discerns C(present) and C(absent).
         required: true
-        choices : ['present', 'absent', 'balanced', 'specific']),
+        choices : ['present', 'absent', 'balanced', 'specific']
     iface:
         description:
-            Kernel net interface steering to configure on. E.g. eth0, or enp2s0.
+         - Kernel net interface steering to configure on. E.g. eth0, or enp2s0.
         required : true
         type: str
     distribution:
-        description:
-            Path to json file holding the individually thought up packet
-            steering queues to cpu association. Available for C(tech=xps) or
-            C(tech=rps) - it's useful when something else than balanced
-            steering is required.
+        description: >
+          -  Path to json file holding the individually thought up packet
+             steering queues to cpu association. Available for C(tech=xps) or
+             C(tech=rps) - it's useful when something else than balanced
+             steering is required.
 
-            Basic example:
-            {
-                "distr": [
-                { "0": [1, [4, 5]] },
-                { "1": [1, [2, 3]] },
-                  [...]
-                ]
-            }
-            Would spread queue 0 to cpus 1,4-5 and so on. Required when
-            C(state=specific).
+             Basic example:
+             {
+                 "distr": [
+                 { "0": [1, [4, 5]] },
+                 { "1": [1, [2, 3]] },
+                   [...]
+                 ]
+             }
+             Would spread queue 0 to cpus 1,4-5 and so on. Required when
+             C(state=specific).
         required : false
         default: None
     tab_size:
         description:
-            Kernel RFS flow dissection table size for rfs.
-            Optional when C(tech=rfs).
+          -  Kernel RFS flow dissection table size for rfs.
+             Optional when C(tech=rfs).
         required : false
         type: int
         default: 32768
 
 author:
     - Matthias Tafelmeier (@cherusk)
+'''
+
+RETURN = '''
 '''
 
 EXAMPLES = '''
@@ -88,16 +93,22 @@ EXAMPLES = '''
 - pkt_steering: tech=rps state=balanced iface=enp2s0 distribution=./my_distr.json
 '''
 
+import json
+import re
+
+
 class KernelInteractor:
     ''' Abstracting away kernel config interface interactions. '''
+
+    numa_arch_re = re.compile(r"^(?P<cpu>\d+),(?P<numa_n>\d+)")
+
     def __init__(self, module):
         self.module = module
         self.abbr_to_f = {
-                'rfs_tab' : '/proc/sys/net/core/rps_sock_flow_entries',
-                'rfs_f_cnt' : '/sys/class/net/%s/queues/rx-%s/rps_flow_cnt',
-                'rps_cpus' : '/sys/class/net/%s/queues/rx-%s/rps_cpus',
-                'xps_cpus' : '/sys/class/net/%s/queues/tx-%s/xps_cpus'
-                }
+                        'rfs_tab': '/proc/sys/net/core/rps_sock_flow_entries',
+                        'rfs_f_cnt': '/sys/class/net/%s/queues/rx-%s/rps_flow_cnt',
+                        'rps_cpus': '/sys/class/net/%s/queues/rx-%s/rps_cpus',
+                        'xps_cpus': '/sys/class/net/%s/queues/tx-%s/xps_cpus'}
 
     def out_cnfg(self, what, content, iface=None):
         changed = False
@@ -132,12 +143,14 @@ class KernelInteractor:
         arch_specs = {}
         cmd = 'lscpu -p=CPU,NODE'
 
-
         rc, out, err = self.module.run_command(cmd)
         if rc == 0:
             out = [line for line in out.splitlines() if not line.startswith('#')]
             for line in out:
-                cpu, numa_n = line.split(',', 1)
+                numa_spec = self.numa_arch_re.search(line)
+                cpu = int(numa_spec.group("cpu"))
+                numa_n = int(numa_spec.group("numa_n"))
+
                 if numa_n not in arch_specs.keys():
                     arch_specs[numa_n] = []
 
@@ -155,12 +168,13 @@ class KernelInteractor:
 
     def _write_f(self, f, content):
         hex_bef = self.module.digest_from_file(f, 'sha1')
-        with open(f, "rw+") as out_f:
+        with open(f, "w+") as out_f:
             out_f.write(content)
             out_f.flush()
         hex_aft = self.module.digest_from_file(f, 'sha1')
 
         return (hex_bef != hex_aft)
+
 
 class Associator:
     ''' Component to hold the queue to cpu association mapping logic for the varios steering technologies.'''
@@ -202,7 +216,7 @@ class Associator:
             if rest > 0:
                 delta = delta + 1
                 rest = rest - 1
-            numa_to_qus[str(n)] = (last, last + delta - 1) # since of start at 0
+            numa_to_qus[n] = (last, last + delta - 1)  # since of start at 0
             last = last + delta
 
         qu_to_mask = self.translator.form_qu_to_mask(arch_specs, numa_to_qus)
@@ -255,12 +269,13 @@ class Translator:
                 mask = self._form_per_node_bitmask(intern_cpus)
                 intern_qu_mask[qu] = mask
 
+
         return intern_qu_mask
 
     def form_qu_to_mask(self, arch_specs, numa_to_qus):
         qu_to_mask = {}
         for n, qus in numa_to_qus.items():
-            for qu in qus:
+            for qu in range(qus[0], qus[1]):
                mask = self._form_per_node_bitmask(arch_specs[n])
                qu_to_mask[qu] = mask
 
@@ -268,18 +283,20 @@ class Translator:
 
     def _expand_ext_cpus(self, cpus):
         int_cpus = []
+
         for repres in cpus:
-            if type(repres) is int:
+            if isinstance(repres, int):
                 int_cpus.append(repres)
-            elif type(repres) is list:
+            elif isinstance(repres, list):
                 if len(repres) > 2:
                     return None
                 try:
-                    int_cpus.extend([cpu for cpu in range(repres[0], repres[1])])
+                    int_cpus.extend(range(repres[0], repres[1] + 1))
                 except:
                     return None
             else:
                 return None
+
 
         return int_cpus
 
@@ -289,6 +306,15 @@ class Translator:
             bitmask = bitmask | (1 << int(cpu))
 
         out = "%x" % bitmask
+        out_l = len(out)
+        if out_l > 8:
+            left_marg = out_l % 8
+            sub_grps = ( out_l / 8 ) - 1
+            idx_l = [left_marg]
+            idx_l.extend(range(left_marg, left_marg + 8 * sub_grps, 8))
+            for idx in idx_l:
+                out = out[:idx] + "," + out[idx:]
+
         return out
 
 
@@ -318,14 +344,15 @@ def run(module, args):
     # todo: gconsider return qu_masks
     module.exit_json(changed=changed, **args)
 
+
 def main():
     module = AnsibleModule(
-        argument_spec = dict(
-            state  = dict(required=True, choices=['present', 'absent', 'balanced', 'specific']),
-            tech = dict(required=True, choices=['rfs', 'rps', 'xps']),
-            iface = dict(required=True),
-            distribution = dict(required=False, default=None),
-            tab_size = dict(required=False, default=32768)),
+        argument_spec=dict(
+            state=dict(required=True, choices=['present', 'absent', 'balanced', 'specific']),
+            tech=dict(required=True, choices=['rfs', 'rps', 'xps']),
+            iface=dict(required=True),
+            distribution=dict(required=False, default=None),
+            tab_size=dict(required=False, default=32768)),
         supports_check_mode=False
     )
 
@@ -350,7 +377,7 @@ def main():
     run(module, args)
 
 
-import json
-from ansible.module_utils.basic import *
+from ansible.module_utils.basic import AnsibleModule
 
-main()
+if __name__ == '__main__':
+    main()
