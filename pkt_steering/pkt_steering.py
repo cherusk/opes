@@ -169,7 +169,7 @@ class KernelInteractor:
     def _write_f(self, f, content):
         hex_bef = self.module.digest_from_file(f, 'sha1')
         with open(f, "w+") as out_f:
-            out_f.write(content)
+            out_f.write(str(content))
             out_f.flush()
         hex_aft = self.module.digest_from_file(f, 'sha1')
 
@@ -329,8 +329,10 @@ def run(module, args):
             changed = interactor.out_cnfg('rfs_tab', '0')
 
         if args['state'] == 'present':
-            qu_num = interactor.determine_qu_num(args['iface'], 'rx')
-            per_qu_flows = int(args['tab_size'] / qu_num)
+            f1 = open("/tmp/dbg1", "w+")
+            qu_num = interactor.determine_qu_num('rx', args['iface'])
+            f1.write(str(qu_num))
+            per_qu_flows = int(args['tab_size']) / int(qu_num)
             out_para = (qu_num, per_qu_flows)
 
             changed = interactor.out_cnfg('rfs_tab', args['tab_size'])
