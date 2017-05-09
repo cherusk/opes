@@ -84,12 +84,14 @@ if __name__ == "__main__":
     parser.add_argument("-s", dest="sort", help='CPU num to sort by') 
     parser.add_argument("-r", "--rate", dest="rate", help='determine rate per sec for interval', metavar="SECS")
     parser.add_argument("--hard", dest="hard", help='showing hardirqs', default=False, action='store_true')
+    parser.add_argument("--range", dest="_range", help='cpu range to focus', default=None, metavar="CPUX-CPUY")
 
     args = parser.parse_args()
 
     raw = []
     _Irqs = []
     col_head = []
+
     if not args.rate:
         raw = procfs_read_raw(PROC_FS_H_IRQS if args.hard else PROC_FS_S_IRQS)
         col_head, _Irqs = form_irq_abstraction(raw, args)
@@ -104,6 +106,11 @@ if __name__ == "__main__":
             col_head, _Irq_abstr = form_irq_abstraction(raw, args)
             abstr_l.append(_Irq_abstr)
         _Irqs = merge_rate_meas(abstr_l, delta)
+
+    if args._range:
+        args._range = [ int(x) for x in args._range.strip().split("-")]
+        args._range[1] = args._range[1] + 1
+        col_head = col_head[args._range[0]:args._range[1]]
 
     if args.total:
         col_head.append("total") 
@@ -122,6 +129,8 @@ if __name__ == "__main__":
             outl = irq.get_occ()
         if args.total:
             outl.append(irq.total())
+        if args._range:
+            outl = outl[args._range[0]:args._range[1]]
         outl.insert(0, irq.name)
         table.append(outl)
 
