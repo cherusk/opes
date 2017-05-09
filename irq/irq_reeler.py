@@ -82,7 +82,7 @@ if __name__ == "__main__":
     parser.add_argument("-p", '--perc', default=False, help='show CPU taken by IRQ in percentage', action='store_true')
     parser.add_argument("-t", dest="total", default=False, help='total up irqs per channel', action='store_true')
     parser.add_argument("-s", dest="sort", help='CPU num to sort by') 
-    parser.add_argument("-r", "--rate", dest="rate", help='determine rate per sec for interval', nargs=2)
+    parser.add_argument("-r", "--rate", dest="rate", help='determine rate per sec for interval', metavar="SECS")
     parser.add_argument("--hard", dest="hard", help='showing hardirqs', default=False, action='store_true')
 
     args = parser.parse_args()
@@ -94,7 +94,7 @@ if __name__ == "__main__":
         raw = procfs_read_raw(PROC_FS_H_IRQS if args.hard else PROC_FS_S_IRQS)
         col_head, _Irqs = form_irq_abstraction(raw, args)
     else:
-        delta = int(args.rate[1]) - int(args.rate[0])
+        delta = int(args.rate)
         raw_l = []
         raw_l.append(procfs_read_raw(PROC_FS_H_IRQS if args.hard else PROC_FS_S_IRQS))
         time.sleep( delta )
