@@ -19,6 +19,7 @@
 
 import argparse
 import time
+from time import sleep
 
 from tabulate import tabulate
 
@@ -76,20 +77,10 @@ def merge_rate_meas(abstr_l, delta):
 
     return merged_Irq_abstr 
 
-if __name__ == "__main__":
-    
-    parser = argparse.ArgumentParser(description='Frontend to irqs (soft | hard) proc fs')
-    parser.add_argument("-p", '--perc', default=False, help='show CPU taken by IRQ in percentage', action='store_true')
-    parser.add_argument("-t", dest="total", default=False, help='total up irqs per channel', action='store_true')
-    parser.add_argument("-s", dest="sort", help='CPU num to sort by') 
-    parser.add_argument("-r", "--rate", dest="rate", help='determine rate per sec for interval', metavar="SECS")
-    parser.add_argument("--hard", dest="hard", help='showing hardirqs', default=False, action='store_true')
-    parser.add_argument("--range", dest="_range", help='cpu range to focus', default=None, metavar="CPUX-CPUY")
 
-    args = parser.parse_args()
-
+def run(args):
     raw = []
-    _Irqs = []
+    Irqs = []
     col_head = []
 
     if not args.rate:
@@ -136,3 +127,27 @@ if __name__ == "__main__":
 
     print tabulate(table, headers=col_head, tablefmt="plain")
  
+
+if __name__ == "__main__":
+    
+    parser = argparse.ArgumentParser(description='Frontend to irqs (soft | hard) proc fs')
+    parser.add_argument("-p", '--perc', default=False, help='show CPU taken by IRQ in percentage', action='store_true')
+    parser.add_argument("-t", dest="total", default=False, help='total up irqs per channel', action='store_true')
+    parser.add_argument("-s", dest="sort", help='CPU num to sort by') 
+    parser.add_argument("-r", "--rate", dest="rate", help='determine rate per sec for interval', metavar="SECS")
+    parser.add_argument("--hard", dest="hard", help='showing hardirqs', default=False, action='store_true')
+    parser.add_argument("--range", dest="_range", help='cpu range to focus', default=None, metavar="CPUX-CPUY")
+    parser.add_argument("-c", dest="continuous", help='repeat times the interval in secs',
+                        type=int, default=(0, 1), metavar=('INTERVAL', 'REPETITIONS'), nargs=2)
+
+    args = parser.parse_args()
+
+    dec = lambda x : x - 1
+
+    repeat = args.continuous[1]
+    interval = float(args.continuous[0])
+
+    while repeat:
+        run(args)
+        sleep(interval)
+        repeat = dec(repeat)
