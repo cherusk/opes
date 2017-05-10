@@ -30,7 +30,7 @@ PROC_FS_H_IRQS = "/proc/interrupts"
 class Irq:
     def __init__(self, name, data, _range):
         if _range:
-            self.occurrences = data[_range[0]:_range[1]]
+            self.occurrences = Irq.filter_range(data, _range)
         else:
             self.occurrences = data
         self.name = name
@@ -50,6 +50,19 @@ class Irq:
 
     def __getitem__(self, i):
         return self.occurrences[i]
+
+    @classmethod
+    def filter_range(cls, data, _range):
+        out = []
+        for subr in _range:
+            if isinstance(subr, list):
+                out.extend(data[subr[0]:subr[1]])
+            elif isinstance(subr, int):
+                out.append(data[subr])
+            else:
+                raise RuntimeError("unexpected subrange")
+
+        return out
 
 
 def procfs_read_raw(_file):
@@ -101,7 +114,7 @@ def do_outp(col_head, _Irqs, args):
         _Irqs = sorted(_Irqs, cmp=cmp_f, key=key_f)
 
     if args._range:
-        col_head = col_head[args._range[0]:args._range[1]]
+        col_head = Irq.filter_range(col_head, args._range) 
 
     if args.total:
         col_head.append("total")
@@ -118,6 +131,16 @@ def do_outp(col_head, _Irqs, args):
 
     print tabulate(table, headers=col_head, tablefmt="plain")
 
+def parse_range(args):
+    args._range = args._range.strip().split(",")
+    singl_cpus = [int(x) for x in args._range if x.find("-") == -1]
+    subranges = [x for x in args._range if x.find("-") > 0]
+    subranges = [x.split("-") for x in subranges]
+    subranges = [[int(x[0]), int(x[1]) + 1] for x in subranges]
+    args._range = []
+    args._range.extend(singl_cpus)
+    args._range.extend(subranges)
+    print args._range
 
 def run(args):
     raw = []
@@ -126,8 +149,7 @@ def run(args):
     focus = determ_focus(args)
 
     if args._range:
-        args._range = [int(x) for x in args._range.strip().split("-")]
-        args._range[1] = args._range[1] + 1
+        parse_range(args)
 
     if args.rate:
         delta = int(args.rate)
@@ -154,7 +176,7 @@ if __name__ == "__main__":
     parser.add_argument("-s", dest="sort", help='CPU num to sort by')
     parser.add_argument("-r", "--rate", dest="rate", help='determine rate per sec for interval', metavar="SECS")
     parser.add_argument("--hard", dest="hard", help='showing hardirqs', default=False, action='store_true')
-    parser.add_argument("--range", dest="_range", help='cpu range to focus', default=None, metavar="CPUX-CPUY")
+    parser.add_argument("--range", dest="_range", help='cpu range to focus', default=None, metavar="CPUX-CPUY,CPUZ")
     parser.add_argument("-c", dest="continuous", help='repeat times the interval in secs',
                         type=int, default=(0, 1), metavar=('INTERVAL', 'REPETITIONS'), nargs=2)
 
