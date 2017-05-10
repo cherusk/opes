@@ -111,8 +111,6 @@ def do_outp(col_head, _Irqs, args):
             outl = irq.cpu_share_percent()
         else:
             outl = irq.get_occ()
-        if args._range:
-            outl = outl[args._range[0]:args._range[1]]
         if args.total:
             outl.append(irq.total())
         outl.insert(0, irq.name)
