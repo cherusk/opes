@@ -27,8 +27,11 @@ PROC_FS_S_IRQS = "/proc/softirqs"
 PROC_FS_H_IRQS = "/proc/interrupts"
 
 class Irq:
-    def __init__(self, name, data):
-        self.occurrences = data 
+    def __init__(self, name, data, _range):
+        if _range:
+            self.occurrences = data[_range[0]:_range[1]]
+        else:
+            self.occurrences = data
         self.name = name
 
     def total(self):
@@ -65,7 +68,7 @@ def form_irq_abstraction(raw, args):
             if len (raw_l_refined[1:len(col_head)+1]) < len(col_head):
                     continue
             name = "%s %s" % ("".join(raw_l_refined[len(col_head)+1:]), name)
-        _Irqs.append(Irq(name, [ int(i) for i in raw_l_refined[1:len(col_head)+1] ]))
+        _Irqs.append(Irq(name, [ int(i) for i in raw_l_refined[1:len(col_head)+1] ], args._range))
     return col_head, _Irqs
 
 def merge_rate_meas(abstr_l, delta):
@@ -83,6 +86,10 @@ def run(args):
     Irqs = []
     col_head = []
 
+    if args._range:
+        args._range = [ int(x) for x in args._range.strip().split("-")]
+        args._range[1] = args._range[1] + 1
+
     if not args.rate:
         raw = procfs_read_raw(PROC_FS_H_IRQS if args.hard else PROC_FS_S_IRQS)
         col_head, _Irqs = form_irq_abstraction(raw, args)
@@ -99,8 +106,6 @@ def run(args):
         _Irqs = merge_rate_meas(abstr_l, delta)
 
     if args._range:
-        args._range = [ int(x) for x in args._range.strip().split("-")]
-        args._range[1] = args._range[1] + 1
         col_head = col_head[args._range[0]:args._range[1]]
 
     if args.total:
