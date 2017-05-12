@@ -170,12 +170,13 @@ def run(args):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description='Frontend to irqs (soft | hard) proc fs')
-    parser.add_argument("-p", '--perc', default=False, help='show CPU taken by IRQ in percentage', action='store_true')
-    parser.add_argument("-t", dest="total", default=False, help='total up irqs per channel', action='store_true')
+    descr = 'Frontend to the linux kernel exported IRQs (soft and hard) procfs interface'
+    parser = argparse.ArgumentParser(description=descr)
+    parser.add_argument("-p", '--perc', default=False, help='show CPU taken by IRQ channel in percentage', action='store_true')
+    parser.add_argument("-t", dest="total", default=False, help='total up IRQs per channel', action='store_true')
     parser.add_argument("-s", dest="sort", help='CPU num to sort by')
-    parser.add_argument("-r", "--rate", dest="rate", help='determine rate per sec for interval', metavar="SECS")
-    parser.add_argument("--hard", dest="hard", help='showing hardirqs', default=False, action='store_true')
+    parser.add_argument("-r", "--rate", dest="rate", help='determine rate of occurrences per sec for interval', metavar="SECS")
+    parser.add_argument("--hard", dest="hard", help='showing hardIRQs', default=False, action='store_true')
     parser.add_argument("--range", dest="_range", help='cpu range to focus', default=None, metavar="CPUX-CPUY,CPUZ")
     parser.add_argument("-c", dest="continuous", help='repeat times the interval in secs',
                         type=int, default=(0, 1), metavar=('INTERVAL', 'REPETITIONS'), nargs=2)
