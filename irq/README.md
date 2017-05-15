@@ -1,31 +1,36 @@
-# irq_reeler.py
+# install
+
+\# pip install irq_reeler
+
+# irq_reeler
 
 A tool meant to make linux interrupts userland analysis more convenient.
 
 ```
-usage: irq_reeler.py [-h] [-p] [-t] [-s SORT] [-r SECS] [--hard]
-                     [--range CPUX-CPUY,CPUZ] [-c INTERVAL REPETITIONS]
+usage: irq_reeler [-h] [-p] [-t] [-s SORT] [-r SECS] [--hard]
+                  [--range CPUX-CPUY,CPUZ] [-c INTERVAL REPETITIONS]
 
-Frontend to irqs (soft | hard) proc fs
+Frontend to the linux kernel exported IRQs (soft and hard) procfs interface
 
 optional arguments:
   -h, --help            show this help message and exit
-  -p, --perc            show CPU taken by IRQ in percentage
-  -t                    total up irqs per channel
+  -p, --perc            show CPU taken by IRQ channel in percentage
+  -t                    total up IRQs per channel
   -s SORT               CPU num to sort by
-  -r SECS, --rate SECS  determine rate per sec for interval
-  --hard                showing hardirqs
+  -r SECS, --rate SECS  determine rate of occurrences per sec for interval
+  --hard                showing hardIRQs
   --range CPUX-CPUY,CPUZ
                         cpu range to focus
   -c INTERVAL REPETITIONS
                         repeat times the interval in secs
 
 
+
 Does what says on the tin:
 
 E.g.:
 
-python irq_reeler.py --rate 5 -t
+$ irq_reeler --rate 5 -t --range 0-7
                  CPU0    CPU1    CPU2    CPU3    CPU4    CPU5    CPU6    CPU7    total
 HI:                 0       0       0       0       0       0       0       0        0
 TIMER:            108     196     126      54      38      23      37       3      585
