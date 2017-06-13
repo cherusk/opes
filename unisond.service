@@ -1,0 +1,11 @@
+[Unit]
+Description=Unison Daemon
+After=network.target
+
+[Service]
+ExecStart=/usr/bin/unison -socket 49180
+ExecReload=/bin/kill $MAINPID
+Environment=HOME=/root
+
+[Install]
+WantedBy=network.target
