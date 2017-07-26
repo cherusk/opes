@@ -1,0 +1,39 @@
+---
+- hosts: all 
+  gather_facts: False
+  vars_prompt:
+      - name: "sink"
+        prompt: "sink (dir)"
+        private: no
+        default: './'
+      - name: "dur"
+        prompt: "duration (s)"
+        private: no
+        default: '1'
+      - name: "iface"
+        prompt: "iface"
+        private: no
+        default: any
+      - name: "express"
+        prompt: "expression"
+        private: no
+        default: "" 
+  vars:
+      remote_gath_dir: /tmp
+      date: "$(date +%F-%H)"
+      f_name: "{{ inventory_hostname }}_{{date}}.pcap" 
+  tasks:  
+  - name: tracing 
+    shell: timeout {{ dur }} tcpdump -i {{ iface }} -w "{{ remote_gath_dir }}{{f_name}}" {{ express }} 
+    register: res 
+    changed_when: "res.rc  == 124"
+    failed_when: "res.rc != 124 and res.rc != 0"
+
+  - find:
+      paths: "{{ remote_gath_dir }}"
+      patterns: "{{ inventory_hostname }}*.pcap"
+      recurse: yes
+    register: found 
+
+  - fetch: src={{ item['path']}}  dest={{ sink }}/{{ item['path'] | basename }} flat=yes
+    with_items: "{{ found.files }}"
